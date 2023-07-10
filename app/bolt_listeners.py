@@ -108,8 +108,7 @@ def respond_to_app_mention(
             messages.append(
                 {
                     "role": "user",
-                    "content": f"<@{user_id}>: "
-                    + format_openai_message_content(msg_text, TRANSLATE_MARKDOWN),
+                    "content": format_openai_message_content(msg_text, TRANSLATE_MARKDOWN),
                 }
             )
 
@@ -296,15 +295,6 @@ def respond_to_new_message(
         if is_no_mention_required is False:
             return
 
-        if is_in_dm_with_bot is True or last_assistant_idx == -1:
-            # To know whether this app needs to start a new convo
-            if not next(filter(lambda msg: msg["role"] == "system", messages), None):
-                # Replace placeholder for Slack user ID in the system prompt
-                system_text = build_system_text(
-                    SYSTEM_TEXT, TRANSLATE_MARKDOWN, context
-                )
-                messages.insert(0, {"role": "system", "content": system_text})
-
         filtered_messages_in_context = []
         for idx, reply in enumerate(messages_in_context):
             # Strip bot Slack user ID from initial message
@@ -322,11 +312,18 @@ def respond_to_new_message(
             reply_text = redact_string(reply.get("text"))
             messages.append(
                 {
-                    "content": f"<@{msg_user_id}>: "
-                    + format_openai_message_content(reply_text, TRANSLATE_MARKDOWN),
+                    "content": format_openai_message_content(reply_text, TRANSLATE_MARKDOWN),
                     "role": "user",
                 }
             )
+
+        if is_in_dm_with_bot is True or last_assistant_idx == -1:
+            # To know whether this app needs to start a new convo
+            # Replace placeholder for Slack user ID in the system prompt
+            system_text = build_system_text(
+                SYSTEM_TEXT, TRANSLATE_MARKDOWN, context
+            )
+            messages.append({"role": "system", "content": system_text})
 
         loading_text = translate(
             openai_api_key=openai_api_key, context=context, text=DEFAULT_LOADING_TEXT
