@@ -234,14 +234,12 @@ def respond_to_new_message(
             past_messages = client.conversations_history(
                 channel=context.channel_id,
                 include_all_metadata=True,
-                limit=100,
+                limit=30,
             ).get("messages", [])
             past_messages.reverse()
             # Remove old messages
             for message in past_messages:
-                seconds = time.time() - float(message.get("ts"))
-                if seconds < 7200:  # less than 2 hours
-                    messages_in_context.append(message)
+                messages_in_context.append(message)
             is_no_mention_required = True
         else:
             # In a thread with the bot in a channel
